@@ -75,6 +75,8 @@ const Project = () => {
 
         }).catch(err => {
             console.log(err)
+            const errorMessage = err.response?.data?.errors?.[0]?.msg || err.response?.data || "Failed to add collaborator";
+            alert(errorMessage);
         })
 
     }
