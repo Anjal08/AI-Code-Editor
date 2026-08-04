@@ -1,4 +1,4 @@
-# 🚀 AI-Powered Real-Time Collaborative Code Editor
+# 🚀 AI-powered collaborative coding workspace for students and teams
 
 ![MERN Stack](https://img.shields.io/badge/Stack-MERN-blue?style=for-the-badge)
 ![Socket.io](https://img.shields.io/badge/Socket.io-Real--Time-black?style=for-the-badge&logo=socket.io)
