@@ -1,14 +1,15 @@
-# AI-Powered Code Editor Workspace
+# Real-Time Collaborative Chat & AI Code Workspace
 
-A full-stack application that provides an interactive, in-browser code editor with an integrated AI assistant. It allows users to generate code using AI, edit it in a VS Code-like interface, and run it directly in the browser using WebContainers.
+A full-stack collaborative application that combines real-time team chat with an integrated AI-powered code editor. It allows teams to communicate seamlessly, add collaborators to projects, generate code using AI, and run applications directly in the browser—all in a synchronized, real-time workspace.
 
 ## Features
 
-- **AI Code Generation**: Integrated with Groq AI to generate code, scripts, and complete file structures instantly via chat.
+- **Real-Time Team Collaboration**: Built with Socket.io to allow multiple users to chat, collaborate on projects, and share messages instantly in a synchronized workspace.
+- **Add Collaborators**: Easily invite team members to join your project workspace for shared development and communication.
+- **AI Code Generation**: Integrated with Groq AI to act as an automated team member that can generate code, scripts, and complete file structures when prompted with `@ai` in the chat.
 - **In-Browser Execution**: Runs Node.js and React applications directly in the browser using the WebContainer API.
 - **VS Code-like Interface**: Features a resizable Explorer panel, an interactive Code Editor (with syntax highlighting), and a functional Terminal for viewing output and logs.
-- **Real-Time Collaboration**: Built with Socket.io for real-time messaging and synchronization.
-- **Secure Backend**: Express.js server backed by MongoDB for storing projects, users, and conversations.
+- **Secure Backend**: Express.js server backed by MongoDB for securely storing projects, users, and team conversations.
 
 ## Tech Stack
 
