@@ -54,13 +54,92 @@ const Landing = () => {
 
             {/* Mockup Preview Section */}
             <div className="w-full max-w-6xl mx-auto px-4 pb-20 relative z-10">
-                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/50 p-2 backdrop-blur-xl shadow-2xl shadow-indigo-900/20 transform hover:-translate-y-2 transition-all duration-500">
-                    <div className="rounded-xl border border-slate-700/50 bg-slate-950 overflow-hidden aspect-video relative flex items-center justify-center">
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent z-0"></div>
-                        <div className="z-10 text-center">
-                            <i className="ri-terminal-window-fill text-6xl text-indigo-400 mb-4 block opacity-80"></i>
-                            <h3 className="text-2xl font-bold text-slate-200">Your AI Workspace Awaits</h3>
+                <div className="rounded-2xl border border-slate-700/50 bg-slate-900/80 p-2 backdrop-blur-xl shadow-2xl shadow-indigo-900/20 transform hover:-translate-y-2 transition-all duration-500">
+                    <div className="rounded-xl border border-slate-800 bg-[#0f111a] overflow-hidden flex flex-col md:flex-row h-[400px] md:h-[500px]">
+                        
+                        {/* Explorer Panel */}
+                        <div className="hidden md:flex flex-col w-64 border-r border-slate-800 bg-[#141622]">
+                            <div className="p-4 flex items-center justify-between border-b border-slate-800">
+                                <span className="text-sm font-semibold text-slate-300">Explorer</span>
+                                <i className="ri-more-fill text-slate-500"></i>
+                            </div>
+                            <div className="flex-1 overflow-y-auto p-2 text-sm text-slate-400">
+                                <div className="flex items-center gap-2 p-2 hover:bg-slate-800/50 rounded cursor-pointer">
+                                    <i className="ri-folder-3-fill text-slate-400"></i>
+                                    <span>src</span>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 pl-6 hover:bg-slate-800/50 rounded cursor-pointer">
+                                    <i className="ri-folder-3-fill text-slate-400"></i>
+                                    <span>components</span>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 pl-6 bg-indigo-600/10 text-indigo-300 rounded cursor-pointer border border-indigo-500/20">
+                                    <i className="ri-reactjs-line text-cyan-400"></i>
+                                    <span>App.jsx</span>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 pl-6 hover:bg-slate-800/50 rounded cursor-pointer">
+                                    <i className="ri-javascript-line text-yellow-400"></i>
+                                    <span>index.js</span>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 pl-6 hover:bg-slate-800/50 rounded cursor-pointer">
+                                    <i className="ri-css3-line text-blue-400"></i>
+                                    <span>styles.css</span>
+                                </div>
+                                <div className="flex items-center gap-2 p-2 hover:bg-slate-800/50 rounded cursor-pointer">
+                                    <i className="ri-npmjs-line text-red-400"></i>
+                                    <span>package.json</span>
+                                </div>
+                            </div>
                         </div>
+
+                        {/* Editor Panel */}
+                        <div className="flex-1 flex flex-col bg-[#0f111a]">
+                            <div className="flex items-center bg-[#141622] border-b border-slate-800 pt-2 px-2">
+                                <div className="px-4 py-2 border-x border-t border-slate-800 bg-[#0f111a] text-indigo-300 text-sm flex items-center gap-2 rounded-t-md">
+                                    <i className="ri-reactjs-line text-cyan-400"></i>
+                                    App.jsx
+                                    <i className="ri-close-line text-slate-500 hover:text-slate-300 ml-2"></i>
+                                </div>
+                            </div>
+                            <div className="flex-1 p-4 font-mono text-sm overflow-hidden relative">
+                                <div className="flex">
+                                    <div className="text-slate-600 select-none pr-4 text-right flex flex-col gap-1 w-8">
+                                        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span>10</span>
+                                    </div>
+                                    <div className="flex-1 flex flex-col gap-1">
+                                        <div><span className="text-pink-400">import</span> <span className="text-cyan-300">React</span> <span className="text-pink-400">from</span> <span className="text-green-300">'react'</span></div>
+                                        <div></div>
+                                        <div><span className="text-pink-400">export default function</span> <span className="text-indigo-300">App</span>() {'{'}</div>
+                                        <div className="pl-4"><span className="text-pink-400">return</span> (</div>
+                                        <div className="pl-8"><span className="text-slate-400">&lt;</span><span className="text-pink-400">div</span> <span className="text-indigo-300">className</span><span className="text-slate-400">=</span><span className="text-green-300">"app"</span><span className="text-slate-400">&gt;</span></div>
+                                        <div className="pl-12"><span className="text-slate-400">&lt;</span><span className="text-pink-400">h1</span><span className="text-slate-400">&gt;</span><span className="text-slate-100">CollabCode</span><span className="text-slate-400">&lt;/</span><span className="text-pink-400">h1</span><span className="text-slate-400">&gt;</span></div>
+                                        <div className="pl-12"><span className="text-slate-400">&lt;</span><span className="text-pink-400">p</span><span className="text-slate-400">&gt;</span><span className="text-slate-100">Code together. Ship faster with AI.</span><span className="text-slate-400">&lt;/</span><span className="text-pink-400">p</span><span className="text-slate-400">&gt;</span></div>
+                                        <div className="pl-8"><span className="text-slate-400">&lt;/</span><span className="text-pink-400">div</span><span className="text-slate-400">&gt;</span></div>
+                                        <div className="pl-4">)</div>
+                                        <div>{'}'}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* AI Assistant Panel */}
+                        <div className="hidden lg:flex flex-col w-80 border-l border-slate-800 bg-[#141622]">
+                            <div className="p-4 flex items-center justify-between border-b border-slate-800">
+                                <span className="text-sm font-semibold text-slate-300">AI Assistant</span>
+                                <i className="ri-list-check-2 text-slate-500"></i>
+                            </div>
+                            <div className="flex-1 p-4 flex flex-col gap-4">
+                                <div className="text-sm text-slate-400">How can I help you code today?</div>
+                            </div>
+                            <div className="p-4">
+                                <div className="relative">
+                                    <input type="text" placeholder="Ask anything..." className="w-full bg-[#0f111a] border border-slate-700 rounded-lg py-2.5 pl-3 pr-10 text-sm text-slate-200 focus:outline-none focus:border-indigo-500" readOnly />
+                                    <div className="absolute right-2 top-2 w-7 h-7 bg-indigo-600 rounded flex items-center justify-center">
+                                        <i className="ri-magic-line text-xs text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
