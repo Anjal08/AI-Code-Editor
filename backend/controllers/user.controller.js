@@ -82,9 +82,16 @@ export const profileController = async (req, res) => {
 export const updateProfileController = async (req, res) => {
     try {
         const { fullName, username, bio, profilePhoto } = req.body;
+        
+        const updates = {};
+        if (fullName !== undefined) updates.fullName = fullName;
+        if (username !== undefined) updates.username = username;
+        if (bio !== undefined) updates.bio = bio;
+        if (profilePhoto !== undefined) updates.profilePhoto = profilePhoto;
+
         const user = await userModel.findOneAndUpdate(
             { email: req.user.email },
-            { fullName, username, bio, profilePhoto },
+            { $set: updates },
             { new: true, runValidators: true }
         ).populate('starredProjects');
 
@@ -93,7 +100,7 @@ export const updateProfileController = async (req, res) => {
         }
         res.status(200).json({ user });
     } catch (err) {
-        console.log(err);
+        console.error('Update Profile Error:', err);
         res.status(400).json({ error: err.message });
     }
 }
