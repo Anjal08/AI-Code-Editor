@@ -39,84 +39,145 @@ const Home = () => {
     }, [])
 
     return (
-        <main className='min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 text-slate-100 flex flex-col items-center py-12 px-4 font-sans'>
-            {/* Header section */}
-            <div className="w-full max-w-6xl flex flex-col items-center mb-16 mt-8 animate-fade-in">
-                <div className="w-20 h-20 bg-indigo-600 rounded-2xl flex items-center justify-center mb-6 shadow-lg shadow-indigo-500/30 transform transition-transform hover:scale-105 border border-indigo-400/20">
-                    <i className="ri-code-s-slash-line text-4xl text-white"></i>
+        <main className="min-h-screen bg-[#FAFBFF] text-slate-900 flex font-sans">
+            {/* Sidebar */}
+            <aside className="w-64 bg-white border-r border-slate-100 flex flex-col hidden md:flex min-h-screen">
+                <div className="p-6 flex items-center gap-3 mb-4">
+                    <div className="w-8 h-8 bg-[#5A52FF] rounded-md flex items-center justify-center">
+                        <i className="ri-code-s-slash-line text-white"></i>
+                    </div>
+                    <span className="font-bold text-xl tracking-tight">CollabCode</span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-300 mb-4 text-center tracking-tight">
-                    AI Code Workspace
-                </h1>
-                <p className="text-slate-400 text-lg text-center max-w-xl">
-                    Create, collaborate, and generate code with AI in real-time. Select a project below or start a new one to dive in.
-                </p>
-            </div>
 
-            <div className="w-full max-w-6xl">
-                <div className="projects grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {/* New Project Button */}
-                    <button
+                <div className="px-4 mb-6">
+                    <button 
                         onClick={() => setIsModalOpen(true)}
-                        className="group project p-6 flex flex-col items-center justify-center gap-4 bg-slate-800/40 backdrop-blur-md border border-slate-700/50 rounded-2xl hover:bg-indigo-600/20 hover:border-indigo-500/50 transition-all duration-300 ease-out shadow-lg hover:shadow-indigo-500/20 h-48"
+                        className="w-full bg-[#5A52FF] hover:bg-[#4942E6] text-white py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shadow-sm shadow-[#5A52FF]/30"
                     >
-                        <div className="w-14 h-14 bg-indigo-500/20 rounded-full flex items-center justify-center group-hover:bg-indigo-500/40 transition-colors">
-                            <i className="ri-add-line text-3xl text-indigo-300 group-hover:text-white"></i>
-                        </div>
-                        <span className="font-semibold text-lg text-indigo-200 group-hover:text-white transition-colors">New Project</span>
+                        <i className="ri-add-line text-lg"></i>
+                        New Project
                     </button>
+                </div>
 
-                    {/* Existing Projects */}
-                    {
-                        project.map((project) => (
-                            <div key={project._id}
-                                onClick={() => {
-                                    navigate(`/project`, {
-                                        state: { project }
-                                    })
-                                }}
-                                className="project flex flex-col justify-between p-6 bg-slate-800/40 backdrop-blur-md border border-slate-700/50 rounded-2xl cursor-pointer hover:bg-slate-700/50 hover:border-slate-500 transition-all duration-300 ease-out hover:-translate-y-1 shadow-lg h-48 group"
-                            >
-                                <div>
-                                    <div className="flex items-center justify-between mb-4">
-                                        <div className="w-10 h-10 bg-slate-700 rounded-lg flex items-center justify-center group-hover:bg-indigo-500/20 transition-colors">
-                                            <i className="ri-folder-open-fill text-xl text-slate-300 group-hover:text-indigo-300"></i>
+                <nav className="flex-1 px-4 flex flex-col gap-1">
+                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 bg-[#F2F0FF] text-[#5A52FF] rounded-lg font-medium">
+                        <i className="ri-folder-3-line text-lg"></i>
+                        Projects
+                    </a>
+                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
+                        <i className="ri-time-line text-lg"></i>
+                        Recent
+                    </a>
+                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
+                        <i className="ri-star-line text-lg"></i>
+                        Starred
+                    </a>
+                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
+                        <i className="ri-team-line text-lg"></i>
+                        Shared with me
+                    </a>
+                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
+                        <i className="ri-layout-masonry-line text-lg"></i>
+                        Templates
+                    </a>
+                </nav>
+
+                <div className="p-4 mt-auto">
+                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
+                        <i className="ri-settings-3-line text-lg"></i>
+                        Settings
+                    </a>
+                </div>
+            </aside>
+
+            {/* Main Content */}
+            <div className="flex-1 flex flex-col">
+                <header className="p-8 pb-4 flex justify-between items-start">
+                    <div>
+                        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2 mb-2">
+                            Welcome back, {user?.email ? user.email.split('@')[0] : 'User'} <span className="text-2xl">👋</span>
+                        </h1>
+                        <p className="text-slate-500 font-medium">Let's build something amazing today!</p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-[#3B28CC] text-white flex items-center justify-center font-bold shadow-md cursor-pointer hover:ring-4 ring-[#F2F0FF] transition-all">
+                        {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                    </div>
+                </header>
+
+                <div className="p-8 pt-6 flex-1">
+                    <div className="flex justify-between items-center mb-8">
+                        <h2 className="text-xl font-bold text-slate-900">Your Projects</h2>
+                        <div className="relative">
+                            <input 
+                                type="text" 
+                                placeholder="Search projects..." 
+                                className="pl-4 pr-10 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5A52FF]/20 focus:border-[#5A52FF] text-sm w-64 shadow-sm"
+                            />
+                            <i className="ri-search-line absolute right-3 top-2.5 text-slate-400"></i>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {
+                            project.map((project, index) => {
+                                const colors = ['bg-[#EBE9FE] text-[#5A52FF]', 'bg-[#D1F4E0] text-[#14804A]', 'bg-[#FEF0C7] text-[#B54708]'];
+                                const colorClass = colors[index % colors.length];
+
+                                return (
+                                    <div key={project._id}
+                                        onClick={() => {
+                                            navigate(`/project`, {
+                                                state: { project }
+                                            })
+                                        }}
+                                        className="bg-white border border-slate-100 rounded-xl p-6 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-300 flex flex-col shadow-sm group"
+                                    >
+                                        <div className="flex justify-between items-start mb-6">
+                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass}`}>
+                                                <i className="ri-code-s-slash-line text-2xl"></i>
+                                            </div>
+                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <i className="ri-arrow-right-up-line text-slate-400 hover:text-slate-700"></i>
+                                            </div>
                                         </div>
-                                        <i className="ri-arrow-right-up-line text-slate-500 group-hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0 text-xl"></i>
-                                    </div>
-                                    <h2 className='text-xl font-bold text-slate-100 mb-2 truncate'>
-                                        {project.name}
-                                    </h2>
-                                </div>
 
-                                <div className="flex items-center gap-2 text-sm text-slate-400 bg-slate-900/50 w-fit px-3 py-1.5 rounded-full">
-                                    <i className="ri-group-line text-indigo-400"></i>
-                                    <span>{project.users.length} Collaborator{project.users.length !== 1 ? 's' : ''}</span>
-                                </div>
-                            </div>
-                        ))
-                    }
+                                        <h3 className="font-bold text-lg text-slate-900 mb-1 truncate">{project.name}</h3>
+                                        <p className="text-slate-500 text-sm font-medium mb-6">
+                                            {project.users.length} Collaborator{project.users.length !== 1 ? 's' : ''}
+                                        </p>
+
+                                        <div className="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center text-xs text-slate-400 font-medium">
+                                            <span>Real-time code editor</span>
+                                            <button className="hover:text-slate-700 p-1">
+                                                <i className="ri-more-2-fill text-lg"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                )
+                            })
+                        }
+                    </div>
                 </div>
             </div>
 
             {/* Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 flex items-center justify-center bg-black/60 backdrop-blur-sm z-50 animate-fade-in">
-                    <div className="bg-slate-800 border border-slate-700 p-8 rounded-2xl shadow-2xl w-full max-w-md transform transition-all">
+                <div className="fixed inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm z-50 animate-fade-in">
+                    <div className="bg-white border border-slate-100 p-8 rounded-2xl shadow-2xl shadow-slate-900/10 w-full max-w-md transform transition-all">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="text-2xl font-bold text-slate-100 tracking-tight">Create New Project</h2>
-                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-white transition-colors">
-                                <i className="ri-close-line text-2xl"></i>
+                            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Create New Project</h2>
+                            <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-700 bg-slate-50 hover:bg-slate-100 rounded-full w-8 h-8 flex items-center justify-center transition-colors">
+                                <i className="ri-close-line text-xl"></i>
                             </button>
                         </div>
                         <form onSubmit={createProject}>
                             <div className="mb-6">
-                                <label className="block text-sm font-medium text-slate-300 mb-2">Project Name</label>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">Project Name</label>
                                 <input
                                     onChange={(e) => setProjectName(e.target.value)}
                                     value={projectName || ''}
                                     type="text" 
-                                    className="w-full p-3 bg-slate-900 border border-slate-700 rounded-xl text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all" 
+                                    className="w-full p-3 bg-white border border-slate-200 rounded-xl text-slate-900 focus:outline-none focus:ring-4 focus:ring-[#5A52FF]/10 focus:border-[#5A52FF] transition-all shadow-sm" 
                                     placeholder="e.g. My Awesome App"
                                     required 
                                 />
@@ -124,14 +185,14 @@ const Home = () => {
                             <div className="flex justify-end gap-3 mt-8">
                                 <button 
                                     type="button" 
-                                    className="px-5 py-2.5 bg-slate-700 hover:bg-slate-600 text-slate-200 rounded-xl font-medium transition-colors" 
+                                    className="px-5 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl font-medium transition-colors shadow-sm" 
                                     onClick={() => setIsModalOpen(false)}
                                 >
                                     Cancel
                                 </button>
                                 <button 
                                     type="submit" 
-                                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-medium shadow-lg shadow-indigo-600/30 transition-all"
+                                    className="px-5 py-2.5 bg-[#5A52FF] hover:bg-[#4942E6] text-white rounded-xl font-medium shadow-md shadow-[#5A52FF]/20 transition-all"
                                 >
                                     Create Project
                                 </button>
