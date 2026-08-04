@@ -36,6 +36,25 @@ router.put('/update-file-tree',
     body('fileTree').isObject().withMessage('File tree is required'),
     projectController.updateFileTree
 )
+router.put('/:projectId/star',
+    authMiddleWare.authUser,
+    projectController.toggleStarProject
+)
 
+router.delete('/:projectId',
+    authMiddleWare.authUser,
+    projectController.deleteProject
+)
+
+router.put('/:projectId/rename',
+    authMiddleWare.authUser,
+    body('name').isString().withMessage('Name is required'),
+    projectController.renameProject
+)
+
+router.post('/:projectId/duplicate',
+    authMiddleWare.authUser,
+    projectController.duplicateProject
+)
 
 export default router;

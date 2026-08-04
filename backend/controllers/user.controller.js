@@ -67,11 +67,35 @@ export const loginController = async (req, res) => {
 }
 
 export const profileController = async (req, res) => {
+    try {
+        const user = await userModel.findOne({ email: req.user.email }).populate('starredProjects');
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.status(200).json({ user });
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({ error: err.message });
+    }
+}
 
-    res.status(200).json({
-        user: req.user
-    });
+export const updateProfileController = async (req, res) => {
+    try {
+        const { fullName, username, bio, profilePhoto } = req.body;
+        const user = await userModel.findOneAndUpdate(
+            { email: req.user.email },
+            { fullName, username, bio, profilePhoto },
+            { new: true, runValidators: true }
+        ).populate('starredProjects');
 
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.status(200).json({ user });
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({ error: err.message });
+    }
 }
 
 export const logoutController = async (req, res) => {

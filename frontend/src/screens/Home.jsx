@@ -1,115 +1,179 @@
-import React, { useContext, useState, useEffect } from 'react'
-import { UserContext } from '../context/user.context'
-import axios from "../config/axios"
-import { useNavigate } from 'react-router-dom'
+import React, { useContext, useState, useEffect } from 'react';
+import { UserContext } from '../context/user.context';
+import axios from "../config/axios";
+import { useNavigate } from 'react-router-dom';
+import Sidebar from '../components/Sidebar';
+import Avatar from '../components/Avatar';
+import ProjectCard from '../components/ProjectCard';
+import OnboardingModal from '../components/OnboardingModal';
 
 const Home = () => {
-
-    const { user } = useContext(UserContext)
-    const [ isModalOpen, setIsModalOpen ] = useState(false)
-    const [ projectName, setProjectName ] = useState(null)
-    const [ project, setProject ] = useState([])
-
-    const navigate = useNavigate()
-
-    function createProject(e) {
-        e.preventDefault()
-        console.log({ projectName })
-
-        axios.post('/projects/create', {
-            name: projectName,
-        })
-            .then((res) => {
-                console.log(res)
-                setIsModalOpen(false)
-            })
-            .catch((error) => {
-                console.log(error)
-            })
-    }
+    const { user, setUser } = useContext(UserContext);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [projectName, setProjectName] = useState('');
+    const [projects, setProjects] = useState([]);
+    const [activeTab, setActiveTab] = useState('projects');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [loading, setLoading] = useState(true);
+    
+    // Ensure the user has completed their profile
+    const [showOnboarding, setShowOnboarding] = useState(false);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        axios.get('/projects/all').then((res) => {
-            setProject(res.data.projects)
+        if (user && (!user.fullName || !user.username)) {
+            setShowOnboarding(true);
+        } else {
+            setShowOnboarding(false);
+        }
+    }, [user]);
 
-        }).catch(err => {
-            console.log(err)
-        })
+    // Fetch user profile on mount to get latest starred projects etc.
+    useEffect(() => {
+        const fetchProfile = async () => {
+            try {
+                const res = await axios.get('/users/profile');
+                setUser(res.data.user);
+            } catch (err) {
+                console.error("Failed to fetch profile", err);
+            }
+        };
+        if (user?.email) fetchProfile();
+    }, []);
 
-    }, [])
+    // Fetch Projects with debounced search
+    useEffect(() => {
+        const fetchProjects = async () => {
+            setLoading(true);
+            try {
+                const res = await axios.get(`/projects/all${searchQuery ? `?search=${searchQuery}` : ''}`);
+                setProjects(res.data.projects);
+            } catch (err) {
+                console.error("Failed to fetch projects", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        const timeoutId = setTimeout(() => {
+            fetchProjects();
+        }, 300); // 300ms debounce
+
+        return () => clearTimeout(timeoutId);
+    }, [searchQuery]);
+
+    const createProject = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await axios.post('/projects/create', { name: projectName });
+            setIsModalOpen(false);
+            setProjectName('');
+            setProjects([res.data, ...projects]); // Add to top since it's most recent
+        } catch (error) {
+            console.error(error);
+            alert("Failed to create project");
+        }
+    };
+
+    const handleStar = async (projectId) => {
+        try {
+            const res = await axios.put(`/projects/${projectId}/star`);
+            // Update user context with new starred projects
+            setUser({ ...user, starredProjects: res.data.starredProjects });
+        } catch (error) {
+            console.error("Failed to star project", error);
+        }
+    };
+
+    const handleDelete = async (projectId) => {
+        if (!window.confirm("Are you sure you want to delete this project?")) return;
+        try {
+            await axios.delete(`/projects/${projectId}`);
+            setProjects(projects.filter(p => p._id !== projectId));
+        } catch (error) {
+            console.error("Failed to delete project", error);
+        }
+    };
+
+    const handleRename = async (projectId) => {
+        const newName = window.prompt("Enter new project name:");
+        if (!newName) return;
+        try {
+            const res = await axios.put(`/projects/${projectId}/rename`, { name: newName });
+            setProjects(projects.map(p => p._id === projectId ? res.data.project : p));
+        } catch (error) {
+            console.error("Failed to rename project", error);
+        }
+    };
+
+    const handleDuplicate = async (projectId) => {
+        try {
+            const res = await axios.post(`/projects/${projectId}/duplicate`);
+            setProjects([res.data, ...projects]);
+        } catch (error) {
+            console.error("Failed to duplicate project", error);
+        }
+    };
+
+    // Derived state for filtering based on active tab
+    const getFilteredProjects = () => {
+        let filtered = projects;
+        
+        if (activeTab === 'recent') {
+            filtered = projects.slice(0, 10); // Since backend sorts by lastOpenedAt DESC
+        } else if (activeTab === 'starred') {
+            const starredIds = (user?.starredProjects || []).map(p => typeof p === 'object' ? p._id : p);
+            filtered = projects.filter(p => starredIds.includes(p._id));
+        } else if (activeTab === 'shared') {
+            filtered = projects.filter(p => {
+                const myCollab = p.collaborators?.find(c => c.user === user._id);
+                return myCollab && myCollab.role !== 'Owner';
+            });
+        }
+
+        return filtered;
+    };
+
+    const filteredProjects = getFilteredProjects();
+
+    const isStarred = (projectId) => {
+        const starredIds = (user?.starredProjects || []).map(p => typeof p === 'object' ? p._id : p);
+        return starredIds.includes(projectId);
+    };
 
     return (
         <main className="min-h-screen bg-[#FAFBFF] text-slate-900 flex font-sans">
-            {/* Sidebar */}
-            <aside className="w-64 bg-white border-r border-slate-100 flex flex-col hidden md:flex min-h-screen">
-                <div className="p-6 flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-[#5A52FF] rounded-md flex items-center justify-center">
-                        <i className="ri-code-s-slash-line text-white"></i>
-                    </div>
-                    <span className="font-bold text-xl tracking-tight">CollabCode</span>
-                </div>
-
-                <div className="px-4 mb-6">
-                    <button 
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full bg-[#5A52FF] hover:bg-[#4942E6] text-white py-2.5 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors shadow-sm shadow-[#5A52FF]/30"
-                    >
-                        <i className="ri-add-line text-lg"></i>
-                        New Project
-                    </button>
-                </div>
-
-                <nav className="flex-1 px-4 flex flex-col gap-1">
-                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 bg-[#F2F0FF] text-[#5A52FF] rounded-lg font-medium">
-                        <i className="ri-folder-3-line text-lg"></i>
-                        Projects
-                    </a>
-                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
-                        <i className="ri-time-line text-lg"></i>
-                        Recent
-                    </a>
-                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
-                        <i className="ri-star-line text-lg"></i>
-                        Starred
-                    </a>
-                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
-                        <i className="ri-team-line text-lg"></i>
-                        Shared with me
-                    </a>
-                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
-                        <i className="ri-layout-masonry-line text-lg"></i>
-                        Templates
-                    </a>
-                </nav>
-
-                <div className="p-4 mt-auto">
-                    <a href="#" className="flex items-center gap-3 px-3 py-2.5 text-slate-500 hover:bg-slate-50 hover:text-slate-700 rounded-lg font-medium transition-colors">
-                        <i className="ri-settings-3-line text-lg"></i>
-                        Settings
-                    </a>
-                </div>
-            </aside>
+            <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} setIsModalOpen={setIsModalOpen} />
 
             {/* Main Content */}
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 flex flex-col overflow-hidden">
                 <header className="p-8 pb-4 flex justify-between items-start">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-900 flex items-center gap-2 mb-2">
-                            Welcome back, {user?.email ? user.email.split('@')[0] : 'User'} <span className="text-2xl">👋</span>
+                        <p className="text-slate-500 font-medium mb-1">Good Morning, {user?.fullName?.split(' ')[0] || user?.username || 'Developer'} 👋</p>
+                        <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+                            Today's focus: <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 to-purple-500">"Continue building amazing things."</span>
                         </h1>
-                        <p className="text-slate-500 font-medium">Let's build something amazing today!</p>
                     </div>
-                    <div className="w-10 h-10 rounded-full bg-[#3B28CC] text-white flex items-center justify-center font-bold shadow-md cursor-pointer hover:ring-4 ring-[#F2F0FF] transition-all">
-                        {user?.email ? user.email.charAt(0).toUpperCase() : 'U'}
+                    
+                    <div className="flex items-center gap-4">
+                        <button className="w-10 h-10 rounded-full bg-white border border-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-900 shadow-sm transition-colors relative">
+                            <i className="ri-notification-3-line text-xl"></i>
+                            <span className="absolute top-2 right-2.5 w-2 h-2 bg-red-500 rounded-full"></span>
+                        </button>
+                        <Avatar user={user} />
                     </div>
                 </header>
 
-                <div className="p-8 pt-6 flex-1">
+                <div className="p-8 pt-6 flex-1 overflow-y-auto">
                     <div className="flex justify-between items-center mb-8">
-                        <h2 className="text-xl font-bold text-slate-900">Your Projects</h2>
+                        <h2 className="text-xl font-bold text-slate-900 capitalize">
+                            {activeTab === 'projects' ? 'All Projects' : activeTab}
+                        </h2>
                         <div className="relative">
                             <input 
                                 type="text" 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search projects..." 
                                 className="pl-4 pr-10 py-2 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#5A52FF]/20 focus:border-[#5A52FF] text-sm w-64 shadow-sm"
                             />
@@ -117,50 +181,57 @@ const Home = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                        {
-                            project.map((project, index) => {
-                                const colors = ['bg-[#EBE9FE] text-[#5A52FF]', 'bg-[#D1F4E0] text-[#14804A]', 'bg-[#FEF0C7] text-[#B54708]'];
-                                const colorClass = colors[index % colors.length];
-
-                                return (
-                                    <div key={project._id}
-                                        onClick={() => {
-                                            navigate(`/project`, {
-                                                state: { project }
-                                            })
-                                        }}
-                                        className="bg-white border border-slate-100 rounded-xl p-6 cursor-pointer hover:-translate-y-1 hover:shadow-xl hover:shadow-slate-200/40 transition-all duration-300 flex flex-col shadow-sm group"
-                                    >
-                                        <div className="flex justify-between items-start mb-6">
-                                            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${colorClass}`}>
-                                                <i className="ri-code-s-slash-line text-2xl"></i>
-                                            </div>
-                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <i className="ri-arrow-right-up-line text-slate-400 hover:text-slate-700"></i>
-                                            </div>
-                                        </div>
-
-                                        <h3 className="font-bold text-lg text-slate-900 mb-1 truncate">{project.name}</h3>
-                                        <p className="text-slate-500 text-sm font-medium mb-6">
-                                            {project.users.length} Collaborator{project.users.length !== 1 ? 's' : ''}
-                                        </p>
-
-                                        <div className="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center text-xs text-slate-400 font-medium">
-                                            <span>Real-time code editor</span>
-                                            <button className="hover:text-slate-700 p-1">
-                                                <i className="ri-more-2-fill text-lg"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                )
-                            })
-                        }
-                    </div>
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="bg-white border border-slate-100 rounded-xl p-6 h-48 animate-pulse">
+                                    <div className="w-12 h-12 bg-slate-100 rounded-lg mb-6"></div>
+                                    <div className="w-3/4 h-5 bg-slate-100 rounded mb-2"></div>
+                                    <div className="w-1/2 h-4 bg-slate-100 rounded mb-6"></div>
+                                    <div className="w-full h-8 bg-slate-50 rounded mt-auto"></div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : filteredProjects.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 pb-20">
+                            {filteredProjects.map((project, index) => (
+                                <ProjectCard 
+                                    key={project._id} 
+                                    project={project} 
+                                    index={index} 
+                                    isStarred={isStarred(project._id)}
+                                    onStar={() => handleStar(project._id)}
+                                    onDelete={() => handleDelete(project._id)}
+                                    onRename={() => handleRename(project._id)}
+                                    onDuplicate={() => handleDuplicate(project._id)}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center py-20 text-center animate-fade-in">
+                            <div className="w-32 h-32 bg-indigo-50 rounded-full flex items-center justify-center mb-6">
+                                <i className="ri-folder-open-line text-6xl text-indigo-200"></i>
+                            </div>
+                            <h3 className="text-xl font-bold text-slate-800 mb-2">No projects found</h3>
+                            <p className="text-slate-500 max-w-sm mb-6">
+                                {searchQuery 
+                                    ? `We couldn't find any projects matching "${searchQuery}".` 
+                                    : "You don't have any projects here yet. Create one to get started."}
+                            </p>
+                            {!searchQuery && (
+                                <button 
+                                    onClick={() => setIsModalOpen(true)}
+                                    className="px-6 py-2.5 bg-[#5A52FF] text-white rounded-lg font-medium shadow-md hover:bg-[#4942E6] transition-colors"
+                                >
+                                    Create Project
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Modal */}
+            {/* Create Project Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm z-50 animate-fade-in">
                     <div className="bg-white border border-slate-100 p-8 rounded-2xl shadow-2xl shadow-slate-900/10 w-full max-w-md transform transition-all">
@@ -201,8 +272,10 @@ const Home = () => {
                     </div>
                 </div>
             )}
-        </main>
-    )
-}
 
-export default Home
+            <OnboardingModal isOpen={showOnboarding} onClose={() => setShowOnboarding(false)} />
+        </main>
+    );
+};
+
+export default Home;

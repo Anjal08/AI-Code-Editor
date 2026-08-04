@@ -9,11 +9,31 @@ const projectSchema = new mongoose.Schema({
         trim: true,
         unique: [ true, 'Project name must be unique' ],
     },
-
-    users: [
+    description: {
+        type: String,
+        trim: true,
+        default: ''
+    },
+    language: {
+        type: String,
+        trim: true,
+        default: 'JavaScript'
+    },
+    lastOpenedAt: {
+        type: Date,
+        default: Date.now
+    },
+    collaborators: [
         {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'user'
+            user: {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'user'
+            },
+            role: {
+                type: String,
+                enum: ['Owner', 'Editor', 'Viewer'],
+                default: 'Editor'
+            }
         }
     ],
     fileTree: {

@@ -15,7 +15,7 @@ export const createProject = async ({
     try {
         project = await projectModel.create({
             name,
-            users: [ userId ]
+            collaborators: [ { user: userId, role: 'Owner' } ]
         });
     } catch (error) {
         if (error.code === 11000) {
@@ -29,14 +29,24 @@ export const createProject = async ({
 }
 
 
-export const getAllProjectByUserId = async ({ userId }) => {
+export const getAllProjectByUserId = async ({ userId, search }) => {
     if (!userId) {
         throw new Error('UserId is required')
     }
 
-    const allUserProjects = await projectModel.find({
-        users: userId
-    })
+    const query = {
+        'collaborators.user': userId
+    };
+
+    if (search) {
+        query.$or = [
+            { name: { $regex: search, $options: 'i' } },
+            { description: { $regex: search, $options: 'i' } },
+            { language: { $regex: search, $options: 'i' } }
+        ];
+    }
+
+    const allUserProjects = await projectModel.find(query).sort({ lastOpenedAt: -1 });
 
     return allUserProjects
 }
@@ -70,7 +80,7 @@ export const addUsersToProject = async ({ projectId, users, userId }) => {
 
     const project = await projectModel.findOne({
         _id: projectId,
-        users: userId
+        'collaborators.user': userId
     })
 
     console.log(project)
@@ -83,8 +93,8 @@ export const addUsersToProject = async ({ projectId, users, userId }) => {
         _id: projectId
     }, {
         $addToSet: {
-            users: {
-                $each: users
+            collaborators: {
+                $each: users.map(id => ({ user: id, role: 'Editor' }))
             }
         }
     }, {
@@ -108,7 +118,7 @@ export const getProjectById = async ({ projectId }) => {
 
     const project = await projectModel.findOne({
         _id: projectId
-    }).populate('users')
+    }).populate('collaborators.user')
 
     return project;
 }
@@ -135,4 +145,44 @@ export const updateFileTree = async ({ projectId, fileTree }) => {
     })
 
     return project;
+}
+
+export const deleteProject = async ({ projectId, userId }) => {
+    if (!projectId || !userId) throw new Error("projectId and userId are required");
+    
+    // Check permission (must be owner or at least part of the project depending on logic)
+    const project = await projectModel.findOne({ _id: projectId, 'collaborators.user': userId });
+    if (!project) throw new Error("Unauthorized or project not found");
+
+    await projectModel.deleteOne({ _id: projectId });
+    return true;
+}
+
+export const renameProject = async ({ projectId, name, userId }) => {
+    if (!projectId || !name || !userId) throw new Error("projectId, name, and userId are required");
+    
+    const project = await projectModel.findOneAndUpdate(
+        { _id: projectId, 'collaborators.user': userId },
+        { name },
+        { new: true }
+    );
+    if (!project) throw new Error("Unauthorized or project not found");
+    return project;
+}
+
+export const duplicateProject = async ({ projectId, userId }) => {
+    if (!projectId || !userId) throw new Error("projectId and userId are required");
+    
+    const project = await projectModel.findOne({ _id: projectId, 'collaborators.user': userId });
+    if (!project) throw new Error("Unauthorized or project not found");
+
+    const duplicatedProject = await projectModel.create({
+        name: `${project.name} (Copy)`,
+        description: project.description,
+        language: project.language,
+        collaborators: [ { user: userId, role: 'Owner' } ],
+        fileTree: project.fileTree
+    });
+
+    return duplicatedProject;
 }
