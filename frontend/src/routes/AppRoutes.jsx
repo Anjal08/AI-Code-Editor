@@ -6,6 +6,8 @@ import Home from '../screens/Home'
 import Project from '../screens/Project'
 import Landing from '../screens/Landing'
 import Profile from '../screens/Profile'
+import Settings from '../screens/Settings'
+import StarredProjects from '../screens/StarredProjects'
 import UserAuth from '../auth/UserAuth'
 
 const AppRoutes = () => {
@@ -19,6 +21,8 @@ const AppRoutes = () => {
                 <Route path="/register" element={<Register />} />
                 <Route path="/profile" element={<UserAuth><Profile /></UserAuth>} />
                 <Route path="/project" element={<UserAuth><Project /></UserAuth>} />
+                <Route path="/settings" element={<UserAuth><Settings /></UserAuth>} />
+                <Route path="/starred" element={<UserAuth><StarredProjects /></UserAuth>} />
             </Routes>
 
         </BrowserRouter>

@@ -7,6 +7,9 @@ import Markdown from 'markdown-to-jsx'
 import hljs from 'highlight.js';
 import { getWebContainer } from '../config/webcontainer'
 import { Panel, Group, Separator } from 'react-resizable-panels'
+import { Terminal } from '@xterm/xterm'
+import { FitAddon } from '@xterm/addon-fit'
+import '@xterm/xterm/css/xterm.css'
 
 function SyntaxHighlightedCode(props) {
     const ref = useRef(null)
@@ -51,6 +54,10 @@ const Project = () => {
     const [ runProcess, setRunProcess ] = useState(null)
     const [ runProcessLogs, setRunProcessLogs ] = useState([])
 
+    const terminalRef = useRef(null)
+    const xtermRef = useRef(null)
+    const shellProcessRef = useRef(null)
+
     const handleUserClick = (id) => {
         setSelectedUserId(prevSelectedUserId => {
             const newSelectedUserId = new Set(prevSelectedUserId);
@@ -68,25 +75,27 @@ const Project = () => {
 
 
     function addCollaborators() {
-
         axios.put("/projects/add-user", {
             projectId: location.state.project._id,
             users: Array.from(selectedUserId)
         }).then(res => {
             console.log(res.data)
             setIsModalOpen(false)
-
+            // Refresh project to get populated collaborators
+            axios.get(`/projects/get-project/${location.state.project._id}`).then(res => {
+                setProject(res.data.project)
+            })
         }).catch(err => {
             console.log(err)
         })
-
     }
 
     const send = () => {
 
         sendMessage('project-message', {
             message,
-            sender: user
+            sender: user,
+            fileTree
         })
         setMessages(prevMessages => [ ...prevMessages, { sender: user, message } ]) // Update messages state
         setMessage("")
@@ -116,11 +125,70 @@ const Project = () => {
 
         initializeSocket(project._id)
 
+        if (!xtermRef.current && terminalRef.current) {
+            const term = new Terminal({
+                cursorBlink: true,
+                theme: {
+                    background: '#0f172a',
+                    foreground: '#f8fafc',
+                },
+                fontFamily: 'monospace',
+                fontSize: 14,
+            });
+            const fitAddon = new FitAddon();
+            term.loadAddon(fitAddon);
+            term.open(terminalRef.current);
+            fitAddon.fit();
+            xtermRef.current = { term, fitAddon };
+            
+            const resizeObserver = new ResizeObserver(() => {
+                fitAddon.fit();
+                if (shellProcessRef.current) {
+                    shellProcessRef.current.resize({
+                        cols: term.cols,
+                        rows: term.rows,
+                    });
+                }
+            });
+            resizeObserver.observe(terminalRef.current);
+            xtermRef.current.resizeObserver = resizeObserver;
+        }
+
         if (!webContainer) {
-            getWebContainer().then(container => {
+            getWebContainer().then(async container => {
                 setWebContainer(container)
                 webContainerRef.current = container
                 console.log("container started")
+
+                container.on('server-ready', (port, url) => {
+                    console.log("Server ready at", port, url);
+                    setIframeUrl(url);
+                });
+
+                if (xtermRef.current) {
+                    const { term, fitAddon } = xtermRef.current;
+                    
+                    const shellProcess = await container.spawn('jsh', {
+                        terminal: {
+                            cols: term.cols,
+                            rows: term.rows,
+                        }
+                    });
+                    shellProcessRef.current = shellProcess;
+
+                    shellProcess.output.pipeTo(
+                        new WritableStream({
+                            write(data) {
+                                term.write(data);
+                            }
+                        })
+                    );
+
+                    const input = shellProcess.input.getWriter();
+                    term.onData((data) => {
+                        input.write(data);
+                    });
+                }
             })
         }
 
@@ -170,9 +238,19 @@ const Project = () => {
 
         return () => {
             disconnectSocket();
+            if (shellProcessRef.current) {
+                shellProcessRef.current.kill();
+                shellProcessRef.current = null;
+            }
+            if (xtermRef.current) {
+                xtermRef.current.resizeObserver?.disconnect();
+                xtermRef.current.term.dispose();
+                xtermRef.current = null;
+            }
         }
 
     }, [])
+
 
     function saveFileTree(ft) {
         axios.put('/projects/update-file-tree', {
@@ -244,14 +322,27 @@ const Project = () => {
                                 <div className="files flex">
                                     {
                                         openFiles.map((file, index) => (
-                                            <button
+                                            <div
                                                 key={index}
-                                                onClick={() => setCurrentFile(file)}
-                                                className={`open-file cursor-pointer p-2 px-4 flex items-center w-fit gap-2 bg-slate-300 ${currentFile === file ? 'bg-slate-400' : ''}`}>
-                                                <p
-                                                    className='font-semibold text-lg'
-                                                >{file}</p>
-                                            </button>
+                                                className={`open-file flex items-center w-fit bg-slate-300 ${currentFile === file ? 'bg-slate-400' : ''}`}>
+                                                <button
+                                                    onClick={() => setCurrentFile(file)}
+                                                    className='cursor-pointer p-2 px-4 font-semibold text-lg hover:text-slate-800'>
+                                                    {file}
+                                                </button>
+                                                <button
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        const newOpenFiles = openFiles.filter(f => f !== file);
+                                                        setOpenFiles(newOpenFiles);
+                                                        if (currentFile === file) {
+                                                            setCurrentFile(newOpenFiles.length > 0 ? newOpenFiles[0] : null);
+                                                        }
+                                                    }}
+                                                    className="p-1 pr-2 text-slate-500 hover:text-slate-900 rounded-md">
+                                                    <i className="ri-close-line"></i>
+                                                </button>
+                                            </div>
                                         ))
                                     }
                                 </div>
@@ -299,9 +390,23 @@ const Project = () => {
                                                 try {
                                                     const pkg = JSON.parse(fileTree['package.json'].file.contents);
                                                     if (pkg.scripts && pkg.scripts.dev) {
+                                                        startCmd = "npm";
                                                         startArgs = ["run", "dev"];
                                                     } else if (pkg.scripts && pkg.scripts.start) {
+                                                        startCmd = "npm";
                                                         startArgs = ["start"];
+                                                    } else if (pkg.main && fileTree[pkg.main]) {
+                                                        startCmd = "node";
+                                                        startArgs = [pkg.main];
+                                                    } else if (fileTree['server.js']) {
+                                                        startCmd = "node";
+                                                        startArgs = ["server.js"];
+                                                    } else if (fileTree['app.js']) {
+                                                        startCmd = "node";
+                                                        startArgs = ["app.js"];
+                                                    } else if (fileTree['index.js']) {
+                                                        startCmd = "node";
+                                                        startArgs = ["index.js"];
                                                     }
                                                 } catch(err) { console.error(err) }
                                             } else if (fileTree['server.js']) {
@@ -333,13 +438,6 @@ const Project = () => {
                                             });
 
                                             setRunProcess(tempRunProcess)
-
-                                            webContainer.on('server-ready', (port, url) => {
-                                                console.log(port, url)
-                                                setRunProcessLogs(prev => [...prev, `\nServer is ready and running at ${url}\n`])
-                                                setIframeUrl(url)
-                                                setIsIframeLoading(false)
-                                            })
 
                                         }}
                                         className='p-2 px-6 m-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md font-semibold transition-all shadow-md flex items-center gap-2'
@@ -411,10 +509,10 @@ const Project = () => {
                                 <h3 className="cursor-pointer text-slate-100 border-b-2 border-indigo-500 pb-2 -mb-2">TERMINAL</h3>
                                 <h3 className="cursor-pointer hover:text-slate-100">PORTS</h3>
                             </div>
-                            <div className="font-mono text-xs flex-grow overflow-auto">
-                                {runProcessLogs.map((log, i) => (
-                                    <span key={i} className="block whitespace-pre-wrap">{log}</span>
-                                ))}
+                            <div 
+                                className="flex-grow overflow-hidden h-full"
+                                ref={terminalRef}
+                            >
                             </div>
                         </Panel>
 
@@ -468,30 +566,80 @@ const Project = () => {
                     </div>
                     <div className={`sidePanel w-full h-full flex flex-col gap-2 bg-slate-50 absolute transition-all ${isSidePanelOpen ? 'translate-x-0' : 'translate-x-full'} top-0 z-20`}>
                         <header className='flex justify-between items-center px-4 p-2 bg-slate-200'>
-
-                            <h1
-                                className='font-semibold text-lg'
-                            >Collaborators</h1>
-
-                            <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='p-2'>
-                                <i className="ri-close-fill"></i>
-                            </button>
+                            <div className='flex items-center gap-4 w-full'>
+                                <h1 className='font-semibold text-lg flex-1'>Collaborators</h1>
+                                <button 
+                                    onClick={() => setIsModalOpen(true)}
+                                    className='text-sm text-blue-600 font-medium hover:text-blue-700 flex items-center gap-1'
+                                >
+                                    <i className="ri-add-line"></i> Invite
+                                </button>
+                                <button onClick={() => setIsSidePanelOpen(!isSidePanelOpen)} className='p-2 ml-2 hover:bg-slate-300 rounded-md transition-colors'>
+                                    <i className="ri-close-fill"></i>
+                                </button>
+                            </div>
                         </header>
-                        <div className="users flex flex-col gap-2">
-
-                            {project.users && project.users.map(user => {
-
-
+                        <div className="users flex flex-col">
+                            {project.collaborators && project.collaborators.map((collaborator, index) => {
+                                const collabUser = collaborator.user;
+                                if (!collabUser) return null;
+                                
+                                const isMe = collabUser._id === user._id;
+                                const isOwner = collaborator.role === 'Owner';
+                                const myRole = project.collaborators.find(c => c.user._id === user._id)?.role || project.collaborators.find(c => c.user === user._id)?.role;
+                                const amIOwner = myRole === 'Owner';
+                                
                                 return (
-                                    <div key={user._id} className="user cursor-pointer hover:bg-slate-200 p-2 flex gap-2 items-center">
-                                        <div className='aspect-square rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
-                                            <i className="ri-user-fill absolute"></i>
+                                    <React.Fragment key={collabUser._id}>
+                                        <div className="user hover:bg-slate-100 p-4 flex justify-between items-center transition-colors group relative">
+                                            <div className="flex gap-3 items-center">
+                                                <div className="relative">
+                                                    <div className='w-10 h-10 rounded-full flex items-center justify-center text-white bg-slate-600 shadow-sm'>
+                                                        <i className="ri-user-fill"></i>
+                                                    </div>
+                                                    <span className={`absolute bottom-0 right-0 w-3 h-3 border-2 border-white rounded-full ${isMe ? 'bg-green-500' : 'bg-slate-400'}`}></span>
+                                                </div>
+                                                <div className="flex flex-col">
+                                                    <h1 className='font-semibold text-slate-900 leading-tight'>
+                                                        {collabUser.fullName || collabUser.email} {isMe && '(You)'}
+                                                    </h1>
+                                                    <p className='text-xs text-slate-500 font-medium mt-0.5'>{collaborator.role}</p>
+                                                </div>
+                                            </div>
+                                            
+                                            {amIOwner && !isMe && (
+                                                <div className="relative group/menu">
+                                                    <button className="p-2 text-slate-400 hover:text-slate-600 rounded-md hover:bg-slate-200 transition-colors">
+                                                        <i className="ri-more-2-fill"></i>
+                                                    </button>
+                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-md shadow-lg border border-slate-100 py-1 hidden group-hover/menu:block z-50">
+                                                        <button 
+                                                            onClick={async () => {
+                                                                if(confirm(`Remove ${collabUser.fullName || collabUser.email} from the project?`)) {
+                                                                    try {
+                                                                        const res = await axios.put('/projects/remove-user', {
+                                                                            projectId: project._id,
+                                                                            userId: collabUser._id
+                                                                        });
+                                                                        setProject(res.data.project);
+                                                                    } catch (err) {
+                                                                        console.error(err);
+                                                                    }
+                                                                }
+                                                            }}
+                                                            className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                        >
+                                                            <i className="ri-user-unfollow-line"></i> Remove from project
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
-                                        <h1 className='font-semibold text-lg'>{user.email}</h1>
-                                    </div>
+                                        {index < project.collaborators.length - 1 && (
+                                            <div className="h-px bg-slate-200 mx-4"></div>
+                                        )}
+                                    </React.Fragment>
                                 )
-
-
                             })}
                         </div>
                     </div>
@@ -508,12 +656,12 @@ const Project = () => {
                             </button>
                         </header>
                         <div className="users-list flex flex-col gap-2 mb-16 max-h-96 overflow-auto">
-                            {users.map(user => (
+                            {users.filter(u => !project.collaborators?.some(c => c.user?._id === u._id)).map(user => (
                                 <div key={user._id} className={`user cursor-pointer hover:bg-slate-200 ${Array.from(selectedUserId).indexOf(user._id) != -1 ? 'bg-slate-200' : ""} p-2 flex gap-2 items-center`} onClick={() => handleUserClick(user._id)}>
                                     <div className='aspect-square relative rounded-full w-fit h-fit flex items-center justify-center p-5 text-white bg-slate-600'>
                                         <i className="ri-user-fill absolute"></i>
                                     </div>
-                                    <h1 className='font-semibold text-lg'>{user.email}</h1>
+                                    <h1 className='font-semibold text-lg'>{user.fullName || user.email}</h1>
                                 </div>
                             ))}
                         </div>

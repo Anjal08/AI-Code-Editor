@@ -57,4 +57,11 @@ router.post('/:projectId/duplicate',
     projectController.duplicateProject
 )
 
+router.put('/remove-user',
+    authMiddleWare.authUser,
+    body('projectId').isString().withMessage('Project ID is required'),
+    body('userId').isString().withMessage('User ID is required'),
+    projectController.removeCollaborator
+)
+
 export default router;

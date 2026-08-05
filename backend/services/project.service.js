@@ -186,3 +186,31 @@ export const duplicateProject = async ({ projectId, userId }) => {
 
     return duplicatedProject;
 }
+
+export const removeUserFromProject = async ({ projectId, targetUserId, requestingUserId }) => {
+    if (!projectId || !targetUserId || !requestingUserId) {
+        throw new Error("projectId, targetUserId, and requestingUserId are required");
+    }
+
+    const project = await projectModel.findOne({ _id: projectId });
+    if (!project) {
+        throw new Error("Project not found");
+    }
+
+    const requestingUserCollab = project.collaborators.find(c => c.user.toString() === requestingUserId);
+    if (!requestingUserCollab || (requestingUserCollab.role !== 'Owner' && requestingUserId !== targetUserId)) {
+        throw new Error("Unauthorized to remove this user");
+    }
+
+    const updatedProject = await projectModel.findOneAndUpdate(
+        { _id: projectId },
+        {
+            $pull: {
+                collaborators: { user: new mongoose.Types.ObjectId(targetUserId) }
+            }
+        },
+        { new: true }
+    ).populate('collaborators.user');
+
+    return updatedProject;
+}

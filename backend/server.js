@@ -77,7 +77,7 @@ io.on('connection', socket => {
             const prompt = message.replace('@ai', '');
 
             try {
-                const result = await generateResult(prompt);
+                const result = await generateResult(prompt, data.fileTree);
 
                 io.to(socket.roomId).emit('project-message', {
                     message: result,

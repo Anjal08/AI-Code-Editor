@@ -33,7 +33,13 @@ const OnboardingModal = ({ isOpen, onClose }) => {
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-slate-900/40 backdrop-blur-sm z-50 animate-fade-in">
-            <div className="bg-white border border-slate-100 p-8 rounded-2xl shadow-2xl shadow-slate-900/10 w-full max-w-md transform transition-all">
+            <div className="bg-white border border-slate-100 p-8 rounded-2xl shadow-2xl shadow-slate-900/10 w-full max-w-md transform transition-all relative">
+                <button 
+                    onClick={onClose}
+                    className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                >
+                    <i className="ri-close-line text-xl"></i>
+                </button>
                 <div className="text-center mb-6">
                     <div className="w-16 h-16 bg-[#F2F0FF] rounded-full flex items-center justify-center mx-auto mb-4">
                         <i className="ri-user-smile-line text-3xl text-[#5A52FF]"></i>

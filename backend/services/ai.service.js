@@ -10,67 +10,26 @@ const systemInstruction = `You are an expert in MERN and Development. You have a
  
     response: {
 
-    "text": "this is you fileTree structure of the express server",
+    "text": "I have created the Express server for you!\\n\\nTo run this code:\\n1. Open the interactive terminal.\\n2. Run \`npm install\` to install the dependencies.\\n3. Run \`node app.js\` to start the server.",
     "fileTree": {
         "app.js": {
-            file: {
-                contents: "
-                const express = require('express');
-
-                const app = express();
-
-
-                app.get('/', (req, res) => {
-                    res.send('Hello World!');
-                });
-
-
-                app.listen(3000, () => {
-                    console.log('Server is running on port 3000');
-                })
-                "
-            
+            "file": {
+                "contents": "const express = require('express');\\nconst app = express();\\n\\napp.get('/', (req, res) => {\\n    res.send('Hello World!');\\n});\\n\\napp.listen(3000, () => {\\n    console.log('Server is running on port 3000');\\n});"
+            }
         },
-    },
-
         "package.json": {
-            file: {
-                contents: "
-
-                {
-                    "name": "temp-server",
-                    "version": "1.0.0",
-                    "main": "index.js",
-                    "scripts": {
-                        "test": "echo \"Error: no test specified\" && exit 1"
-                    },
-                    "keywords": [],
-                    "author": "",
-                    "license": "ISC",
-                    "description": "",
-                    "dependencies": {
-                        "express": "^4.21.2"
-                    }
-}
-
-                
-                "
-                
-                
-
-            },
-
-        },
-
+            "file": {
+                "contents": "{\\n    \\\"name\\\": \\\"temp-server\\\",\\n    \\\"version\\\": \\\"1.0.0\\\",\\n    \\\"main\\\": \\\"index.js\\\",\\n    \\\"scripts\\\": {\\n        \\\"test\\\": \\\"echo \\\\\\\"Error: no test specified\\\\\\\" && exit 1\\\"\\n    },\\n    \\\"dependencies\\\": {\\n        \\\"express\\\": \\\"^4.21.2\\\"\\n    }\\n}"
+            }
+        }
     },
     "buildCommand": {
-        mainItem: "npm",
-            commands: [ "install" ]
+        "mainItem": "npm",
+        "commands": [ "install" ]
     },
-
     "startCommand": {
-        mainItem: "node",
-            commands: [ "app.js" ]
+        "mainItem": "node",
+        "commands": [ "app.js" ]
     }
 }
 
@@ -89,17 +48,24 @@ const systemInstruction = `You are an expert in MERN and Development. You have a
        
        </example>
     
- IMPORTANT : don't use file name like routes/index.js
-       
-       
-    `;
+ IMPORTANT: You must return a valid JSON object. 
+ IMPORTANT: Do not use file names like routes/index.js.
+ IMPORTANT: When creating an Express application, ALWAYS include \`app.listen(...)\` at the bottom of the server file so it actually starts the server.
+ IMPORTANT: ALWAYS list all required dependencies (like express, cors, mongoose) in the \`package.json\` dependencies block.
+ IMPORTANT: In the "text" field of your JSON response, ALWAYS provide clear, step-by-step instructions telling the user exactly what commands to run in the terminal to execute the code you just wrote.
+`;
 
-export const generateResult = async (prompt) => {
+export const generateResult = async (prompt, fileTree) => {
+    let fullPrompt = prompt;
+    if (fileTree) {
+        fullPrompt += `\n\nCurrent File Tree Context:\n${JSON.stringify(fileTree)}`;
+    }
+
     const result = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
         messages: [
             { role: "system", content: systemInstruction },
-            { role: "user", content: prompt }
+            { role: "user", content: fullPrompt }
         ],
         response_format: { type: "json_object" },
         temperature: 0.4

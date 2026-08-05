@@ -66,6 +66,8 @@ export const loginController = async (req, res) => {
     }
 }
 
+import projectModel from '../models/project.model.js';
+
 export const profileController = async (req, res) => {
     try {
         const user = await userModel.findOne({ email: req.user.email }).populate('starredProjects');
@@ -142,5 +144,26 @@ export const getAllUsersController = async (req, res) => {
 
         res.status(400).json({ error: err.message })
 
+    }
+}
+
+export const deleteUserController = async (req, res) => {
+    try {
+        const user = await userModel.findOneAndDelete({ email: req.user.email });
+        
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Also invalidate token just like logout
+        const token = req.cookies.token || req.headers.authorization?.split(' ')[1];
+        if (token) {
+            redisClient.set(token, 'logout', 'EX', 60 * 60 * 24);
+        }
+
+        res.status(200).json({ message: 'Account deleted successfully' });
+    } catch (err) {
+        console.log(err);
+        res.status(400).json({ error: err.message });
     }
 }
