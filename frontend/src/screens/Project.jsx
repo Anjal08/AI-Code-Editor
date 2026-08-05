@@ -5,7 +5,7 @@ import axios from '../config/axios'
 import { initializeSocket, receiveMessage, sendMessage, disconnectSocket } from '../config/socket'
 import Markdown from 'markdown-to-jsx'
 import hljs from 'highlight.js';
-import { getWebContainer } from '../config/webcontainer'
+import { getWebContainer } from '../config/webContainer'
 import { Panel, Group, Separator } from 'react-resizable-panels'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
@@ -204,10 +204,9 @@ const Project = () => {
 
                 console.log(message)
 
-                webContainerRef.current?.mount(message.fileTree)
-
                 if (message.fileTree) {
-                    setFileTree(message.fileTree || {})
+                    webContainerRef.current?.mount(message.fileTree)
+                    setFileTree(message.fileTree)
                 }
                 setMessages(prevMessages => [ ...prevMessages, data ]) // Update messages state
             } else {
