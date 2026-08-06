@@ -53,6 +53,7 @@ const systemInstruction = `You are an expert in MERN and Development. You have a
  IMPORTANT: When creating an Express application, ALWAYS include \`app.listen(...)\` at the bottom of the server file so it actually starts the server.
  IMPORTANT: ALWAYS list all required dependencies (like express, cors, mongoose) in the \`package.json\` dependencies block.
  IMPORTANT: In the "text" field of your JSON response, ALWAYS provide clear, step-by-step instructions telling the user exactly what commands to run in the terminal to execute the code you just wrote.
+ IMPORTANT: If the user asks for a program that requires user input (like adding two numbers, a calculator, etc.), ALWAYS use the built-in Node.js \`readline\` module to make it a fully interactive terminal script.
 `;
 
 export const generateResult = async (prompt, fileTree) => {
